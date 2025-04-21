@@ -1,28 +1,31 @@
-# frozen_string_literal: true
+require "minitest/autorun"
+require "phlex"
 
-test "expires keys" do
-	fifo = Phlex::FIFO.new(max_bytesize: 3)
+class FIFOTest < Minitest::Test
+	def test_expires_keys
+		fifo = Phlex::FIFO.new(max_bytesize: 3)
 
-	100.times do |i|
-		fifo[i] = "a"
+		100.times do |i|
+			fifo[i] = "a"
+		end
+
+		assert_equal 3, fifo.size
 	end
 
-	assert_equal fifo.size, 3
-end
+	def test_reading_a_key
+		fifo = Phlex::FIFO.new(max_bytesize: 3)
 
-test "reading a key" do
-	fifo = Phlex::FIFO.new(max_bytesize: 3)
+		fifo[0] = "a"
 
-	fifo[0] = "a"
+		assert_equal "a", fifo[0]
+	end
 
-	assert_equal fifo[0], "a"
-end
+	def test_ignores_values_that_are_too_large
+		fifo = Phlex::FIFO.new(max_bytesize: 100, max_value_bytesize: 10)
 
-test "ignores values that are too large" do
-	fifo = Phlex::FIFO.new(max_bytesize: 100, max_value_bytesize: 10)
+		fifo[1] = "a" * 10
+		fifo[2] = "a" * 11
 
-	fifo[1] = "a" * 10
-	fifo[2] = "a" * 11
-
-	assert_equal fifo.size, 1
+		assert_equal 1, fifo.size
+	end
 end

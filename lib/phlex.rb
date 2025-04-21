@@ -2,24 +2,28 @@
 
 require "erb"
 require "set"
-require "zeitwerk"
+require 'fiber'
+require 'json'
+# require "zeitwerk"
 
 module Phlex
-	Loader = Zeitwerk::Loader.for_gem.tap do |loader|
-		loader.inflector.inflect(
-			"csv" => "CSV",
-			"fifo" => "FIFO",
-			"fifo_cache_store" => "FIFOCacheStore",
-			"html" => "HTML",
-			"sgml" => "SGML",
-			"svg" => "SVG",
-		)
+  # Loader = Zeitwerk::Loader.for_gem.tap do |loader|
+  #   loader.inflector.inflect(
+  #     "csv" => "CSV",
+  #     "fifo" => "FIFO",
+  #     "fifo_cache_store" => "FIFOCacheStore",
+  #     "html" => "HTML",
+  #     "sgml" => "SGML",
+  #     "svg" => "SVG",
+  #   )
+  #
+  #   loader.collapse("#{__dir__}/phlex/errors")
+  #   loader.setup
+  # end
+  
+  Dir[File.join(__dir__, 'phlex/**/*.rb')].each { |file| require_relative file }
 
-		loader.collapse("#{__dir__}/phlex/errors")
-		loader.setup
-	end
-
-	Escape = ERB::Escape
+	Escape = ERB::Util
 
 	DEPLOYED_AT = Process.clock_gettime(Process::CLOCK_MONOTONIC, :millisecond)
 	CACHED_FILES = Set.new

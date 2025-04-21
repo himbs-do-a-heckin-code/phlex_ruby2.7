@@ -71,7 +71,7 @@ class Phlex::CSV
 							buffer << delimiter
 						end
 
-						__escape__(buffer, header, escape_csv_injection:, strip_whitespace:, escape_regex:)
+						__escape__(buffer, header, escape_csv_injection: escape_csv_injection, strip_whitespace: strip_whitespace, escape_regex: escape_regex)
 					end
 					i += 1
 				end
@@ -96,7 +96,7 @@ class Phlex::CSV
 					buffer << delimiter
 				end
 
-				__escape__(buffer, value, escape_csv_injection:, strip_whitespace:, escape_regex:)
+				__escape__(buffer, value, escape_csv_injection: escape_csv_injection, strip_whitespace: strip_whitespace, escape_regex: escape_regex)
 				i += 1
 			end
 
@@ -145,8 +145,8 @@ class Phlex::CSV
 		@_row_buffer << [header, value]
 	end
 
-	def each_item(&)
-		collection.each(&)
+	def each_item(&block)
+		collection.each(&block)
 	end
 
 	# Override and set to `false` to disable rendering headers.
@@ -164,12 +164,12 @@ class Phlex::CSV
 		UNDEFINED
 	end
 
-	def __escape__(buffer, value, escape_csv_injection:, strip_whitespace:, escape_regex:)
+	def __escape__(buffer, value, escape_csv_injection: nil, strip_whitespace: nil, escape_regex: nil)
 		value = case value
 		when String
 			value
 		when Symbol
-			value.name
+			value.to_s
 		else
 			value.to_s
 		end

@@ -1,23 +1,32 @@
 # frozen_string_literal: true
 
-class Example < Phlex::HTML
-	def view_template
-		svg do |s|
-			s.path(d: "321")
+require "minitest/autorun"
+require "phlex"
+
+module SvgHelper
+	class Example < Phlex::HTML
+		def view_template
+			svg do |s|
+				s.path(d: "321")
+			end
+		end
+	end
+
+	class ExampleWithoutContent < Phlex::HTML
+		def view_template
+			svg
 		end
 	end
 end
 
-class ExampleWithoutContent < Phlex::HTML
-	def view_template
-		svg
+
+
+class SvgTest < Minitest::Test
+	def test_rendering_svg_without_content
+		assert_equal %(<svg></svg>), SvgHelper::ExampleWithoutContent.call
 	end
-end
 
-test "rendering SVG without content" do
-	assert_equal %(<svg></svg>), ExampleWithoutContent.call
-end
-
-test "rendering SVG inside HTML components" do
-	assert_equal %(<svg><path d="321"></path></svg>), Example.call
+	def test_rendering_svg_inside_html_components
+		assert_equal %(<svg><path d="321"></path></svg>), SvgHelper::Example.call
+	end
 end

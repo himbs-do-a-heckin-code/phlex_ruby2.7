@@ -27,7 +27,7 @@ class Phlex::SVG < Phlex::SGML
 		end
 	end
 
-	def tag(name, **attributes, &)
+	def tag(name, **attributes, &block)
 		state = @_state
 		block_given = block_given?
 		buffer = state.buffer
@@ -41,11 +41,11 @@ class Phlex::SVG < Phlex::SGML
 			raise Phlex::ArgumentError.new("Expected the tag name to be a Symbol.")
 		end
 
-		if (tag = StandardElements.__registered_elements__[name]) || (tag = name.name.tr("_", "-")).include?("-")
+		if (tag = StandardElements.__registered_elements__[name]) || (tag = name.to_s.tr("_", "-")).include?("-")
 			if attributes.length > 0 # with attributes
 				if block_given # with content block
 					buffer << "<#{tag}" << (Phlex::ATTRIBUTE_CACHE[attributes] ||= __attributes__(attributes)) << ">"
-					__yield_content__(&)
+					__yield_content__(&block)
 					buffer << "</#{tag}>"
 				else # without content
 					buffer << "<#{tag}" << (::Phlex::ATTRIBUTE_CACHE[attributes] ||= __attributes__(attributes)) << "></#{tag}>"
@@ -53,7 +53,7 @@ class Phlex::SVG < Phlex::SGML
 			else # without attributes
 				if block_given # with content block
 					buffer << ("<#{tag}>")
-					__yield_content__(&)
+					__yield_content__(&block)
 					buffer << "</#{tag}>"
 				else # without content
 					buffer << "<#{tag}></#{tag}>"

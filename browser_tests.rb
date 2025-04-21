@@ -109,7 +109,7 @@ class XSSWithStrings < Phlex::HTML
 						s.cdata(line)
 						s.cdata { line }
 					end
-					erb_snippet(line:)
+					erb_snippet(line: line)
 				end
 			end
 		end

@@ -4,7 +4,6 @@
 class Phlex::FIFOCacheStore
 	def initialize(max_bytesize: 2 ** 20)
 		@fifo = Phlex::FIFO.new(
-			max_bytesize:,
 			max_value_bytesize: max_bytesize
 		)
 	end

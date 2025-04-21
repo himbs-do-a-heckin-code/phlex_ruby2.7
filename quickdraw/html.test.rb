@@ -1,7 +1,11 @@
 # frozen_string_literal: true
 
-test "content type" do
-	component = Class.new(Phlex::HTML)
+require "minitest/autorun"
+require "phlex"
 
-	assert_equal component.new.content_type, "text/html"
+class HTMLTest < Minitest::Test
+	def test_content_type
+		component = Class.new(Phlex::HTML)
+		assert_equal "text/html", component.new.content_type
+	end
 end

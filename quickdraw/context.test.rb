@@ -1,39 +1,44 @@
 # frozen_string_literal: true
 
-test "user context passed in from the outside" do
-	example = Class.new(Phlex::HTML) do
-		define_method :view_template do
-			h1 { context[:heading] }
+require "minitest/autorun"
+require "phlex"
+
+class ContextTest < Minitest::Test
+	def test_user_context_passed_in_from_the_outside
+		example = Class.new(Phlex::HTML) do
+			define_method :view_template do
+				h1 { context[:heading] }
+			end
 		end
+
+		context = { heading: "Hello, World!" }
+		assert_equal %(<h1>Hello, World!</h1>), example.new.call(context: context)
 	end
 
-	context = { heading: "Hello, World!" }
-	assert_equal_html example.new.call(context:), %(<h1>Hello, World!</h1>)
-end
-
-test "user context passed down" do
-	a = Class.new(Phlex::HTML) do
-		define_method :view_template do
-			h1 { context[:heading] }
+	def test_user_context_passed_down
+		a = Class.new(Phlex::HTML) do
+			define_method :view_template do
+				h1 { context[:heading] }
+			end
 		end
+
+		b = Class.new(Phlex::HTML) do
+			define_method :view_template do
+				context[:heading] = "Hello, World!"
+				render a.new
+			end
+		end
+
+		assert_equal %(<h1>Hello, World!</h1>), b.new.call
 	end
 
-	b = Class.new(Phlex::HTML) do
-		define_method :view_template do
-			context[:heading] = "Hello, World!"
-			render a.new
-		end
+	def test_raises_argument_error_if_context_accessed_before_rendering
+		component = Phlex::HTML.new
+
+		error = assert_raises(Phlex::ArgumentError) { component.context }
+
+		assert_equal <<~MESSAGE, error.message
+			You can't access the context before the component has started rendering.
+		MESSAGE
 	end
-
-	assert_equal_html b.new.call, %(<h1>Hello, World!</h1>)
-end
-
-test "raises an ArgumentError if you access the context before rendering" do
-	component = Phlex::HTML.new
-
-	error = assert_raises(Phlex::ArgumentError) { component.context }
-
-	assert_equal error.message, <<~MESSAGE
-		You can’t access the context before the component has started rendering.
-	MESSAGE
 end

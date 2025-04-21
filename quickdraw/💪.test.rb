@@ -1,11 +1,14 @@
-# frozen_string_literal: true
+require "minitest/autorun"
+require "phlex"
 
-class Example < 💪::HTML
-	def view_template
-		h1 { "💪" }
+class EmojiTest < Minitest::Test
+	class Example < 💪::HTML
+		def view_template
+			h1 { "💪" }
+		end
 	end
-end
 
-test "💪" do
-	assert_equal_html Example.new.call, %(<h1>💪</h1>)
+	def test_emoji_component
+		assert_equal %(<h1>💪</h1>), Example.new.call
+	end
 end

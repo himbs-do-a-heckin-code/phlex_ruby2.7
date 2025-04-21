@@ -1,35 +1,38 @@
-# frozen_string_literal: true
+require "minitest/autorun"
+require "phlex"
 
-test "fetch caches the yield" do
-	store = Phlex::FIFOCacheStore.new
-	count = 0
+class FIFOCacheStoreTest < Minitest::Test
+	def test_fetch_caches_the_yield
+		store = Phlex::FIFOCacheStore.new
+		count = 0
 
-	first_read = store.fetch("a") do
-		count += 1
-		"A"
+		first_read = store.fetch("a") do
+			count += 1
+			"A"
+		end
+
+		assert_equal "A", first_read
+		assert_equal 1, count
+
+		second_read = store.fetch("a") do
+			flunk "This block should not have been called."
+			"B"
+		end
+
+		assert_equal "A", second_read
+		assert_equal 1, count
 	end
 
-	assert_equal first_read, "A"
-	assert_equal count, 1
+	def test_nested_caches_do_not_lead_to_contention
+		store = Phlex::FIFOCacheStore.new
 
-	second_read = store.fetch("a") do
-		failure! { "This block should not have been called." }
-		"B"
+		result = store.fetch("a") do
+			[
+				"A",
+				store.fetch("b") { "B" },
+			].join(", ")
+		end
+
+		assert_equal "A, B", result
 	end
-
-	assert_equal second_read, "A"
-	assert_equal count, 1
-end
-
-test "nested caches do not lead to contention" do
-	store = Phlex::FIFOCacheStore.new
-
-	result = store.fetch("a") do
-		[
-			"A",
-			store.fetch("b") { "B" },
-		].join(", ")
-	end
-
-	assert_equal result, "A, B"
 end

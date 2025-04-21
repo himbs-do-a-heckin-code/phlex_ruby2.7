@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
-class Example < Phlex::HTML
+require "minitest/autorun"
+require "phlex"
+
+class DocTypeExample < Phlex::HTML
 	def view_template
 		html {
 			head {
@@ -10,6 +13,8 @@ class Example < Phlex::HTML
 	end
 end
 
-test do
-	assert_equal Example.call, "<html><head><!doctype html></head></html>"
+class DoctypeTest < Minitest::Test
+	def test_doctype_rendering
+		assert_equal DocTypeExample.call, "<html><head><!doctype html></head></html>"
+	end
 end

@@ -1,28 +1,29 @@
-# frozen_string_literal: true
+require "minitest/autorun"
+require "phlex"
 
-test "inline html with no param" do
-	output = Phlex.html do
-		h1 { "Hi" }
+class InlineTest < Minitest::Test
+	def title
+		"Hello"
 	end
 
-	assert_equal_html output, <<~HTML.strip
-		<h1>Hi</h1>
-	HTML
-end
+	def test_inline_html_with_no_param
+		output = Phlex.html do
+			h1 { "Hi" }
+		end
 
-def title = "Hello"
-
-test "inline html with a yield param" do
-	@ivar = "Hi"
-	h1 = "foo"
-
-	output = Phlex.html do |receiver|
-		h1 { h1 }
-		h1 { @ivar }
-		title { receiver.title }
+		assert_equal "<h1>Hi</h1>", output
 	end
 
-	assert_equal_html output, <<~HTML.strip
-		<h1>foo</h1><h1>Hi</h1><title>Hello</title>
-	HTML
+	def test_inline_html_with_yield_param
+		@ivar = "Hi"
+		h1 = "foo"
+
+		output = Phlex.html do |receiver|
+			h1 { h1 }
+			h1 { @ivar }
+			title { receiver.title }
+		end
+
+		assert_equal "<h1>foo</h1><h1>Hi</h1><title>Hello</title>", output
+	end
 end

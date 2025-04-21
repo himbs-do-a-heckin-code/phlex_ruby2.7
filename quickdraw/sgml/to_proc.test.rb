@@ -1,30 +1,36 @@
 # frozen_string_literal: true
 
-require "sgml_helper"
+require "minitest/autorun"
+require "phlex"
+require_relative "../../fixtures/sgml_helper"
 include SGMLHelper
 
-class Example < Phlex::HTML
-	def view_template(&)
-		article(&)
-	end
-
-	def slot(&)
-		render(&)
-	end
-end
-
-class Sub < Phlex::HTML
-	def view_template
-		h1 { "Sub" }
-	end
-end
-
-test "rendering components via #to_proc" do
-	output = phlex do
-		render Example do |e|
-			e.slot(&Sub.new)
+module ToProcHelper
+	class Example < Phlex::HTML
+		def view_template(&block)
+			article(&block)
+		end
+	
+		def slot(&block)
+			render(&block)
 		end
 	end
+	
+	class Sub < Phlex::HTML
+		def view_template
+			h1 { "Sub" }
+		end
+	end
+end
 
-	assert_equal_html output, %(<article><h1>Sub</h1></article>)
+class ToProcTest < Minitest::Test
+	def test_rendering_components_via_to_proc
+		output = phlex do
+			render ToProcHelper::Example do |e|
+				e.slot(&ToProcHelper::Sub.new)
+			end
+		end
+
+		assert_equal output, %(<article><h1>Sub</h1></article>)
+	end
 end

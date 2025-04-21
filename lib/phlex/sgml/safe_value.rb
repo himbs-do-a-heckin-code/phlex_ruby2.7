@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative 'safe_object'
+
 class Phlex::SGML::SafeValue
 	include Phlex::SGML::SafeObject
 

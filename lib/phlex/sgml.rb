@@ -83,20 +83,20 @@ class Phlex::SGML
 		proc { |c| c.render(self) }
 	end
 
-	def call(buffer = +"", context: {}, fragments: nil, &)
+	def call(buffer = +"", context: {}, fragments: nil, &block)
 		state = Phlex::SGML::State.new(
 			user_context: context,
 			output_buffer: buffer,
 			fragments: fragments&.to_set,
 		)
 
-		internal_call(parent: nil, state:, &)
+		internal_call(parent: nil, state: state, &block)
 
 		state.output_buffer << state.buffer
 	end
 
 	def internal_call(parent: nil, state: nil, &block)
-		if @_state
+		if defined? @_state
 			raise Phlex::DoubleRenderError.new(
 				"You can't render a #{self.class.name} more than once."
 			)
@@ -106,7 +106,7 @@ class Phlex::SGML
 
 		return "" unless render?
 
-		block ||= @_content_block
+		block ||= defined?(@_content_block) ? @_content_block : nil
 
 		Thread.current[:__phlex_component__] = [self, Fiber.current.object_id].freeze
 
@@ -138,7 +138,7 @@ class Phlex::SGML
 			@_state.user_context
 		else
 			raise Phlex::ArgumentError.new(<<~MESSAGE)
-				You can’t access the context before the component has started rendering.
+				You can't access the context before the component has started rendering.
 			MESSAGE
 		end
 	end
@@ -146,7 +146,7 @@ class Phlex::SGML
 	# Returns `false` before rendering and `true` once the component has started rendering.
 	# It will not reset back to false after rendering.
 	def rendering?
-		!!@_state
+		!!(defined?(@_state) ? @_state : nil)
 	end
 
 	# Output plain text.
@@ -159,7 +159,7 @@ class Phlex::SGML
 	end
 
 	# Output a single space character. If a block is given, a space will be output before and after the block.
-	def whitespace(&)
+	def whitespace(&block)
 		state = @_state
 		return unless state.should_render?
 
@@ -168,7 +168,7 @@ class Phlex::SGML
 		buffer << " "
 
 		if block_given?
-			__yield_content__(&)
+			__yield_content__(&block)
 			buffer << " "
 		end
 
@@ -178,14 +178,14 @@ class Phlex::SGML
 	# Wrap the output in an HTML comment.
 	#
 	# [MDN Docs](https://developer.mozilla.org/en-US/docs/Web/HTML/Comments)
-	def comment(&)
+	def comment(&block)
 		state = @_state
 		return unless state.should_render?
 
 		buffer = state.buffer
 
 		buffer << "<!-- "
-		__yield_content__(&)
+		__yield_content__(&block)
 		buffer << " -->"
 
 		nil
@@ -244,16 +244,16 @@ class Phlex::SGML
 		@_state.flush
 	end
 
-	def render(renderable = nil, &)
+	def render(renderable = nil, &block)
 		case renderable
 		when Phlex::SGML
-			renderable.internal_call(state: @_state, parent: self, &)
+			renderable.internal_call(state: @_state, parent: self, &block)
 		when Class
 			if renderable < Phlex::SGML
-				render(renderable.new, &)
+				render(renderable.new, &block)
 			end
 		when Enumerable
-			renderable.each { |r| render(r, &) }
+			renderable.each { |r| render(r, &block) }
 		when Proc, Method
 			if renderable.arity == 0
 				__yield_content_with_no_yield_args__(&renderable)
@@ -263,7 +263,7 @@ class Phlex::SGML
 		when String
 			plain(renderable)
 		when nil
-			__yield_content__(&) if block_given?
+			__yield_content__(&block) if block_given?
 		else
 			raise Phlex::ArgumentError.new("You can't render a #{renderable.inspect}.")
 		end
@@ -280,7 +280,7 @@ class Phlex::SGML
 	#   end
 	# end
 	# ```
-	def cache(*cache_key, **, &content)
+	def cache(*cache_key, **args, &content)
 		location = caller_locations(1, 1)[0]
 
 		full_key = [
@@ -292,7 +292,7 @@ class Phlex::SGML
 			cache_key,                                        # allows for custom cache keys
 		].freeze
 
-		low_level_cache(full_key, **, &content)
+		low_level_cache(full_key, **args, &content)
 
 		nil
 	end
@@ -427,7 +427,7 @@ class Phlex::SGML
 		when String
 			state.buffer << Phlex::Escape.html_escape(content)
 		when Symbol
-			state.buffer << Phlex::Escape.html_escape(content.name)
+			state.buffer << Phlex::Escape.html_escape(content.to_s)
 		when nil
 			nil
 		else
@@ -450,7 +450,7 @@ class Phlex::SGML
 		when String
 			state.buffer << Phlex::Escape.html_escape(content)
 		when Symbol
-			state.buffer << Phlex::Escape.html_escape(content.name)
+			state.buffer << Phlex::Escape.html_escape(content.to_s)
 		when nil
 			nil
 		else
@@ -470,7 +470,7 @@ class Phlex::SGML
 
 			name = case k
 				when String then k
-				when Symbol then k.name.tr("_", "-")
+				when Symbol then k.to_s.tr("_", "-")
 				else raise Phlex::ArgumentError.new("Attribute keys should be Strings or Symbols.")
 			end
 
@@ -480,7 +480,7 @@ class Phlex::SGML
 			when String
 				v.gsub('"', "&quot;")
 			when Symbol
-				v.name.tr("_", "-").gsub('"', "&quot;")
+				v.to_s.tr("_", "-").gsub('"', "&quot;")
 			when Integer, Float
 				v.to_s
 			when Hash
@@ -568,7 +568,7 @@ class Phlex::SGML
 			else
 				name = case k
 					when String then k
-					when Symbol then k.name.tr("_", "-")
+					when Symbol then k.to_s.tr("_", "-")
 					else raise Phlex::ArgumentError.new("Attribute keys should be Strings or Symbols")
 				end
 
@@ -583,7 +583,7 @@ class Phlex::SGML
 			when String
 				buffer << " " << base_name << name << '="' << v.gsub('"', "&quot;") << '"'
 			when Symbol
-				buffer << " " << base_name << name << '="' << v.name.tr("_", "-").gsub('"', "&quot;") << '"'
+				buffer << " " << base_name << name << '="' << v.to_s.tr("_", "-").gsub('"', "&quot;") << '"'
 			when Integer, Float
 				buffer << " " << base_name << name << '="' << v.to_s << '"'
 			when Hash
@@ -623,9 +623,9 @@ class Phlex::SGML
 				end
 			when Symbol
 				if i > 0
-					buffer << " " << token.name.tr("_", "-")
+					buffer << " " << token.to_s.tr("_", "-")
 				else
-					buffer << token.name.tr("_", "-")
+					buffer << token.to_s.tr("_", "-")
 				end
 			when Integer, Float, Phlex::SGML::SafeObject
 				if i > 0
@@ -684,7 +684,7 @@ class Phlex::SGML
 				when String
 					k
 				when Symbol
-					k.name.tr("_", "-")
+					k.to_s.tr("_", "-")
 				else
 					raise Phlex::ArgumentError.new("Style keys should be Strings or Symbols.")
 				end
@@ -693,7 +693,7 @@ class Phlex::SGML
 				when String
 					v
 				when Symbol
-					v.name.tr("_", "-")
+					v.to_s.tr("_", "-")
 				when Integer, Float, Phlex::SGML::SafeObject
 					v.to_s
 				when nil
@@ -721,7 +721,7 @@ class Phlex::SGML
 		if method_name == :view_template
 			location = instance_method(method_name).source_location[0]
 
-			if location[0] in "/" | "."
+			if location[0] == "/" || location[0] == "."
 				Phlex.__expand_attribute_cache__(location)
 			end
 		else

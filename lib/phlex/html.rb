@@ -17,9 +17,9 @@ class Phlex::HTML < Phlex::SGML
 	#
 	# [MDN Docs](https://developer.mozilla.org/docs/Web/SVG/Element/svg)
 	# [Spec](https://html.spec.whatwg.org/#the-svg-element)
-	def svg(*, **, &)
+	def svg(*, **, &block)
 		if block_given?
-			super { render Phlex::SVG.new(&) }
+			super { render Phlex::SVG.new(&block) }
 		else
 			super
 		end
@@ -41,7 +41,7 @@ class Phlex::HTML < Phlex::SGML
 	# @tag_name = :h1
 	# tag(@tag_name, class: "title")
 	# ```
-	def tag(name, **attributes, &)
+	def tag(name, **attributes, &block)
 		state = @_state
 		block_given = block_given?
 		buffer = state.buffer
@@ -55,14 +55,14 @@ class Phlex::HTML < Phlex::SGML
 			raise Phlex::ArgumentError.new("Expected the tag name to be a Symbol.")
 		end
 
-		if (tag = StandardElements.__registered_elements__[name]) || (tag = name.name.tr("_", "-")).include?("-")
+		if (tag = StandardElements.__registered_elements__[name]) || (tag = name.to_s.tr("_", "-")).include?("-")
 			if attributes.length > 0 # with attributes
 				if block_given # with content block
 					buffer << "<#{tag}" << (Phlex::ATTRIBUTE_CACHE[attributes] ||= __attributes__(attributes)) << ">"
 					if tag == "svg"
-						render Phlex::SVG.new(&)
+						render Phlex::SVG.new(&block)
 					else
-						__yield_content__(&)
+						__yield_content__(&block)
 					end
 					buffer << "</#{tag}>"
 				else # without content
@@ -72,9 +72,9 @@ class Phlex::HTML < Phlex::SGML
 				if block_given # with content block
 					buffer << ("<#{tag}>")
 					if tag == "svg"
-						render Phlex::SVG.new(&)
+						render Phlex::SVG.new(&block)
 					else
-						__yield_content__(&)
+						__yield_content__(&block)
 					end
 					buffer << "</#{tag}>"
 				else # without content
